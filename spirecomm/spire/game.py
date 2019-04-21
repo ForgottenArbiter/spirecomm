@@ -1,0 +1,113 @@
+from enum import Enum
+
+import spirecomm.spire.relic
+import spirecomm.spire.card
+import spirecomm.spire.character
+import spirecomm.spire.map
+import spirecomm.spire.potion
+import spirecomm.spire.screen
+
+
+class RoomPhase(Enum):
+    COMBAT = 1,
+    EVENT = 2,
+    COMPLETE = 3,
+    INCOMPLETE = 4
+
+
+class Game:
+
+    def __init__(self):
+
+        # General state
+
+        self.current_action = None
+        self.current_hp = 0
+        self.max_hp = 0
+        self.floor = 0
+        self.act = 0
+        self.gold = 0
+        self.seed = 0
+        self.character = None
+        self.ascension_level = None
+        self.relics = []
+        self.deck = []
+        self.potions = []
+        self.map = []
+
+        # Combat state
+
+        self.in_combat = False
+        self.player = None
+        self.monsters = []
+        self.draw_pile = []
+        self.discard_pile = []
+        self.exhaust_pile = []
+        self.hand = []
+
+        # Current Screen
+
+        self.screen = None
+        self.screen_up = False
+        self.screen_type = None
+        self.room_phase = None
+        self.room_type = None
+        self.choice_list = []
+        self.choice_available = False
+
+    @classmethod
+    def from_json(cls, json_state):
+        game = cls()
+        game.current_action = json_state.get("current_action", None)
+        game.current_hp = json_state.get("current_hp")
+        game.max_hp = json_state.get("max_hp")
+        game.floor = json_state.get("floor")
+        game.act = json_state.get("act")
+        game.gold = json_state.get("gold")
+        game.seed = json_state.get("seed")
+        game.character = spirecomm.spire.character.PlayerClass[json_state.get("class")]
+        game.ascension_level = json_state.get("ascension_level")
+        game.relics = [spirecomm.spire.relic.Relic.from_json(json_relic) for json_relic in json_state.get("relics")]
+        game.deck = [spirecomm.spire.card.Card.from_json(json_card) for json_card in json_state.get("deck")]
+        game.map = spirecomm.spire.map.Map.from_json(json_state.get("map"))
+        game.potions = [spirecomm.spire.potion.Potion.from_json(potion) for potion in json_state.get("potions")]
+
+        # Screen State
+
+        game.screen_up = json_state.get("is_screen_up", False)
+        game.screen_type = spirecomm.spire.screen.ScreenType[json_state.get("screen_type")]
+        game.screen = spirecomm.spire.screen.screen_from_json(game.screen_type, json_state.get("screen_state"))
+        game.room_phase = RoomPhase[json_state.get("room_phase")]
+        game.room_type = json_state.get("room_type")
+        game.choice_available = "choice_list" in json_state
+        if game.choice_available:
+            game.choice_list = json_state.get("choice_list")
+
+        # Combat state
+
+        game.in_combat = game.room_phase == RoomPhase.COMBAT
+        if game.in_combat:
+            combat_state = json_state.get("combat_state")
+            game.player = spirecomm.spire.character.Player.from_json(combat_state.get("player"))
+            game.monsters = [spirecomm.spire.character.Monster.from_json(json_monster) for json_monster in combat_state.get("monsters")]
+            for i, monster in enumerate(game.monsters):
+                monster.monster_index = i
+            game.draw_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("draw_pile")]
+            game.discard_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("discard_pile")]
+            game.exhaust_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("exhaust_pile")]
+            game.hand = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("hand")]
+
+        return game
+
+    def are_potions_full(self):
+        for potion in self.potions:
+            if potion.potion_id == "Potion Slot":
+                return False
+        return True
+
+    def get_real_potions(self):
+        potions = []
+        for potion in self.potions:
+            if potion.potion_id != "Potion Slot":
+                potions.append(potion)
+        return potions
