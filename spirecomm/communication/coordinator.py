@@ -6,7 +6,7 @@ import collections
 
 from spirecomm.spire.game import Game
 from spirecomm.spire.screen import ScreenType
-import spirecomm.communication.action
+from spirecomm.communication.action import Action, StartGameAction
 
 
 def read_stdin(input_queue):
@@ -62,46 +62,102 @@ class Coordinator:
         self.last_error = None
 
     def signal_ready(self):
+        """Indicate to Communication Mod that setup is complete
+
+        Must be used once, before any other commands can be sent.
+        :return: None
+        """
         self.send_message("ready")
 
     def send_message(self, message):
+        """Send a command to Communication Mod and start waiting for a response
+
+        :param message: the message to send
+        :type message: str
+        :return: None
+        """
         self.output_queue.put(message)
         self.game_is_ready = False
 
     def add_action_to_queue(self, action):
+        """Queue an action to perform when ready
+
+        :param action: the action to queue
+        :type action: Action
+        :return: None
+        """
         self.action_queue.append(action)
 
     def clear_actions(self):
+        """Remove all actions from the action queue
+
+        :return: None
+        """
         self.action_queue.clear()
 
     def execute_next_action(self):
+        """Immediately execute the next action in the action queue
+
+        :return: None
+        """
         action = self.action_queue.popleft()
         action.execute(self)
 
     def execute_next_action_if_ready(self):
+        """Immediately execute the next action in the action queue, if ready to do so
+
+        :return: None
+        """
         if len(self.action_queue) > 0 and self.action_queue[0].can_be_executed(self):
             self.execute_next_action()
 
     def register_state_change_callback(self, new_callback):
+        """Register a function to be called when a message is received from Communication Mod
+
+        :param new_callback: the function to call
+        :type new_callback: function(game_state: Game, available_commands: list) -> Action
+        :return: None
+        """
         self.state_change_callback = new_callback
 
     def register_command_error_callback(self, new_callback):
+        """Register a function to be called when an error is received from Communication Mod
+
+        :param new_callback: the function to call
+        :type new_callback: function(error: str) -> Action
+        :return: None
+        """
         self.error_callback = new_callback
 
     def register_out_of_game_callback(self, new_callback):
+        """Register a function to be called when Communication Mod indicates we are in the main menu
+
+        :param new_callback: the function to call
+        :type new_callback: function() -> Action
+        :return: None
+        """
         self.out_of_game_callback = new_callback
 
-    def perform_callbacks(self):
-        if self.in_game:
-            self.state_change_callback(self.last_game_state, self.last_available_commands)
-        else:
-            self.out_of_game_callback()
-
     def get_next_raw_message(self, block=False):
+        """Get the next message from Communication Mod as a string
+
+        :param block: set to True to wait for the next message
+        :type block: bool
+        :return: the message from Communication Mod
+        :rtype: str
+        """
         if block or not self.input_queue.empty():
             return self.input_queue.get()
 
-    def receive_game_state_update(self, block=False):
+    def receive_game_state_update(self, block=False, perform_callbacks=True):
+        """Using the next message from Communication Mod, update the stored game state
+
+        :param block: set to True to wait for the next message
+        :type block: bool
+        :param perform_callbacks: set to True to perform callbacks based on the new game state
+        :type perform_callbacks: bool
+        :return: whether a message was received
+        """
         message = self.get_next_raw_message(block)
         if message is not None:
             communication_state = json.loads(message)
@@ -112,42 +168,53 @@ class Coordinator:
                 if self.in_game:
                     self.last_game_state = Game.from_json(communication_state.get("game_state"))
                     self.last_available_commands = communication_state.get("available_commands")
+            if perform_callbacks:
+                if self.last_error is not None:
+                    self.action_queue.clear()
+                    new_action = self.error_callback(self.last_error)
+                    self.add_action_to_queue(new_action)
+                elif self.in_game:
+                    if len(self.action_queue) == 0 and perform_callbacks:
+                        new_action = self.state_change_callback(self.last_game_state, self.last_available_commands)
+                        self.add_action_to_queue(new_action)
+                elif self.stop_after_run:
+                    self.clear_actions()
+                else:
+                    new_action = self.out_of_game_callback()
+                    self.add_action_to_queue(new_action)
             return True
         return False
 
-    def handle_game_state_update(self, block=False, perform_callbacks=True):
-        state_changed = self.receive_game_state_update(block)
-        if state_changed:
-            if self.last_error is not None:
-                self.action_queue.clear()
-                new_action = self.error_callback(self.last_error)
-                self.add_action_to_queue(new_action)
-            elif self.in_game:
-                if len(self.action_queue) == 0 and perform_callbacks:
-                    new_action = self.state_change_callback(self.last_game_state, self.last_available_commands)
-                    self.add_action_to_queue(new_action)
-            elif self.stop_after_run:
-                self.clear_actions()
-            elif perform_callbacks:
-                new_action = self.out_of_game_callback()
-                self.add_action_to_queue(new_action)
-        return state_changed
-
     def run(self):
+        """Start executing actions forever
+
+        :return: None
+        """
         while True:
             self.execute_next_action_if_ready()
-            self.handle_game_state_update()
+            self.receive_game_state_update(perform_callbacks=True)
 
     def play_one_game(self, player_class, ascension_level=0, seed=None):
+        """
+
+        :param player_class: the class to play
+        :type player_class: PlayerClass
+        :param ascension_level: the ascension level to use
+        :type ascension_level: int
+        :param seed: the alphanumeric seed to use
+        :type seed: str
+        :return: True if the game was a victory, else False
+        :rtype: bool
+        """
         self.clear_actions()
         while not self.game_is_ready:
-            self.receive_game_state_update(True)
+            self.receive_game_state_update(block=True, perform_callbacks=False)
         if not self.in_game:
-            spirecomm.communication.action.StartGameAction(player_class, ascension_level, seed).execute(self)
-            self.handle_game_state_update(block=True)
+            StartGameAction(player_class, ascension_level, seed).execute(self)
+            self.receive_game_state_update(block=True)
         while self.in_game:
             self.execute_next_action_if_ready()
-            self.handle_game_state_update()
+            self.receive_game_state_update()
         if self.last_game_state.screen_type == ScreenType.GAME_OVER:
             return self.last_game_state.screen.victory
         else:

@@ -31,6 +31,8 @@ class SimpleAgent:
             self.priorities = IroncladPriority()
         elif self.chosen_class == PlayerClass.DEFECT:
             self.priorities = DefectPowerPriority()
+        else:
+            self.priorities = random.choice(list(PlayerClass))
 
     def handle_error(self, error):
         self.errors += 1
@@ -257,7 +259,7 @@ class SimpleAgent:
                     if test_child_reward > best_rewards[y+1][child.x]:
                         best_rewards[y+1][child.x] = test_child_reward
                         best_parents[y+1][child.x] = node.x
-        best_path = [0 for i in range(map_height + 1)]
+        best_path = [0] * (map_height + 1)
         best_path[map_height] = max(best_rewards[map_height].keys(), key=lambda x: best_rewards[map_height][x])
         for y in range(map_height, 0, -1):
             best_path[y - 1] = best_parents[y][best_path[y]]
