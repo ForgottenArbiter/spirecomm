@@ -40,6 +40,7 @@ def write_stdout(output_queue):
 
 
 class Coordinator:
+    """An object to coordinate communication with Slay the Spire"""
 
     def __init__(self):
         self.input_queue = queue.Queue()

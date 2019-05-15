@@ -2,22 +2,35 @@ from spirecomm.spire.screen import ScreenType, RewardType
 
 
 class Action:
+    """A base class for an action to take in Slay the Spire"""
 
     def __init__(self, command="state", requires_game_ready=True):
         self.command = command
         self.requires_game_ready = requires_game_ready
 
     def can_be_executed(self, coordinator):
+        """Indicates whether the given action can currently be executed, given the coordinator's state
+
+        :param coordinator: The coordinator which will be used to execute the action
+        :return: True if the action can currently be executed
+        ":rtype: boolean
+        """
         if self.requires_game_ready:
             return coordinator.game_is_ready
         else:
             return True
 
     def execute(self, coordinator):
+        """Given the coordinator's current state, execute the given action
+
+        :param coordinator: The coordinator which will be used to execute the action
+        :return: None
+        """
         coordinator.send_message(self.command)
 
 
 class PlayCardAction(Action):
+    """An action to play a specified card from your hand"""
 
     def __init__(self, card=None, card_index=-1, target_monster=None, target_index=None):
         super().__init__("play")
@@ -41,6 +54,7 @@ class PlayCardAction(Action):
 
 
 class PotionAction(Action):
+    """An action to use or discard a selected potion"""
 
     def __init__(self, use, potion=None, potion_index=-1, target_monster=None, target_index=None):
         super().__init__("potion")
@@ -69,24 +83,28 @@ class PotionAction(Action):
 
 
 class EndTurnAction(Action):
+    """An action to end your turn"""
 
     def __init__(self):
         super().__init__("end")
 
 
 class ProceedAction(Action):
+    """An action to use the CommunicationMod 'Proceed' command"""
 
     def __init__(self):
         super().__init__("proceed")
 
 
 class CancelAction(Action):
+    """An action to use the CommunicationMod 'Cancel' command"""
 
     def __init__(self):
         super().__init__("cancel")
 
 
 class ChooseAction(Action):
+    """An action to use the CommunicationMod 'Choose' command"""
 
     def __init__(self, choice_index=0, name=None):
         super().__init__("choose")
@@ -101,24 +119,28 @@ class ChooseAction(Action):
 
 
 class ChooseShopkeeperAction(ChooseAction):
+    """An action to open the shop on a shop screen"""
 
     def __init__(self):
         super().__init__(name="shop")
 
 
 class OpenChestAction(ChooseAction):
+    """An action to open a chest on a chest screen"""
 
     def __init__(self):
         super().__init__(name="open")
 
 
 class BuyCardAction(ChooseAction):
+    """An action to buy a card in a shop"""
 
     def __init__(self, card):
         super().__init__(name=card.name)
 
 
 class BuyPotionAction(ChooseAction):
+    """An action to buy a potion in a shop. Currently, buys the first available potion of the same name."""
 
     def __init__(self, potion):
         super().__init__(name=potion.name)
@@ -130,12 +152,14 @@ class BuyPotionAction(ChooseAction):
 
 
 class BuyRelicAction(ChooseAction):
+    """An action to buy a relic in a shop"""
 
     def __init__(self, relic):
         super().__init__(name=relic.name)
 
 
 class BuyPurgeAction(Action):
+    """An action to buy a card removal at a shop"""
 
     def __init__(self, card_to_purge=None):
         super().__init__()
@@ -146,22 +170,25 @@ class BuyPurgeAction(Action):
             raise Exception("BuyPurgeAction is only available on a Shop Screen")
         coordinator.add_action_to_queue(ChooseAction(name="purge"))
         if self.card_to_purge is not None:
-            coordinator.add_action_to_queue(GridSelectAction([self.card_to_purge]))
+            coordinator.add_action_to_queue(CardSelectAction([self.card_to_purge]))
 
 
 class EventOptionAction(ChooseAction):
+    """An action to choose an event option"""
 
     def __init__(self, option):
         super().__init__(choice_index=option.choice_index)
 
 
 class RestAction(ChooseAction):
+    """An action to choose a rest option at a rest site"""
 
     def __init__(self, rest_option):
         super().__init__(name=rest_option.name)
 
 
 class CardRewardAction(ChooseAction):
+    """An action to choose a card reward, or use Singing Bowl"""
 
     def __init__(self, card=None, bowl=False):
         if bowl:
@@ -174,6 +201,7 @@ class CardRewardAction(ChooseAction):
 
 
 class CombatRewardAction(ChooseAction):
+    """An action to choose a combat reward"""
 
     def __init__(self, combat_reward):
         self.combat_reward = combat_reward
@@ -192,50 +220,60 @@ class CombatRewardAction(ChooseAction):
 
 
 class BossRewardAction(ChooseAction):
+    """An action to choose a boss relic"""
 
     def __init__(self, relic):
         super().__init__(name=relic.name)
 
 
-class OptionalGridConfirmAction(Action):
+class OptionalCardSelectConfirmAction(Action):
+    """An action to click confirm on a hand or grid select screen, only if available"""
 
     def __init__(self):
         super().__init__()
 
     def execute(self, coordinator):
-        if coordinator.last_game_state.screen_type == ScreenType.GRID and coordinator.last_game_state.screen.confirm_up:
+        screen_type = coordinator.last_game_state.screen_type
+        if screen_type == ScreenType.HAND_SELECT:
+            coordinator.add_action_to_queue(ProceedAction())
+        elif screen_type == ScreenType.GRID and coordinator.last_game_state.screen.confirm_up:
             coordinator.add_action_to_queue(ProceedAction())
         else:
             coordinator.add_action_to_queue(StateAction())
 
 
-class GridSelectAction(Action):
+class CardSelectAction(Action):
+    """An action to choose the selected cards on a hand or grid select screen"""
 
     def __init__(self, cards):
         self.cards = cards
         super().__init__()
 
     def execute(self, coordinator):
-        if coordinator.last_game_state.screen_type != ScreenType.GRID:
-            raise Exception("GridSelectAction is only available on a Grid Select Screen.")
+        screen_type = coordinator.last_game_state.screen_type
+        if screen_type not in [ScreenType.HAND_SELECT, ScreenType.GRID]:
+            raise Exception("CardSelectAction is only available on a Hand Select or Grid Select Screen.")
         num_selected_cards = len(coordinator.last_game_state.screen.selected_cards)
         num_remaining_cards = coordinator.last_game_state.screen.num_cards - num_selected_cards
         available_cards = coordinator.last_game_state.screen.cards
-        if len(self.cards) != num_remaining_cards:
-            raise Exception("Wrong number of cards selected for GridSelectAction (provided {}, need {})".format(len(self.cards), num_remaining_cards))
+        if screen_type == ScreenType.HAND_SELECT and len(self.cards) > num_remaining_cards:
+            raise Exception("Too many cards selected for CardSelectAction (provided {}, max {})".format(len(self.cards), num_remaining_cards))
+        elif screen_type == ScreenType.GRID and len(self.cards) != num_remaining_cards:
+            raise Exception("Wrong number of cards selected for CardSelectAction (provided {}, need {})".format(len(self.cards), num_remaining_cards))
         chosen_indices = []
         for card in self.cards:
             if card not in available_cards:
-                raise Exception("Card {} is not available in the Grid Select Screen".format(card.name))
+                raise Exception("Card {} is not available in the Hand Select Screen".format(card.name))
             else:
                 chosen_indices.append(available_cards.index(card))
         chosen_indices.sort(reverse=True)
         for index in chosen_indices:
             coordinator.add_action_to_queue(ChooseAction(choice_index=index))
-        coordinator.add_action_to_queue(OptionalGridConfirmAction())
+        coordinator.add_action_to_queue(OptionalCardSelectConfirmAction())
 
 
 class ChooseMapNodeAction(ChooseAction):
+    """An action to choose a map node, other than the boss"""
 
     def __init__(self, node):
         self.node = node
@@ -252,6 +290,7 @@ class ChooseMapNodeAction(ChooseAction):
 
 
 class ChooseMapBossAction(ChooseAction):
+    """An action to choose the boss map node"""
 
     def __init__(self):
         super().__init__()
@@ -266,6 +305,7 @@ class ChooseMapBossAction(ChooseAction):
 
 
 class StartGameAction(Action):
+    """An action to start a new game, if not already in a game"""
 
     def __init__(self, player_class, ascension_level=0, seed=None):
         super().__init__("start")
@@ -281,6 +321,7 @@ class StartGameAction(Action):
 
 
 class StateAction(Action):
+    """An action to use the CommunicationMod 'State' command"""
 
     def __init__(self, requires_game_ready=False):
         super().__init__(command="state", requires_game_ready=False)

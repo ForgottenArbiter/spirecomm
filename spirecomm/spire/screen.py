@@ -294,20 +294,20 @@ class HandSelectScreen(Screen):
 
     SCREEN_TYPE = ScreenType.HAND_SELECT
 
-    def __init__(self, hand, selected, num_cards, can_pick_zero):
+    def __init__(self, cards, selected, num_cards, can_pick_zero):
         super().__init__()
-        self.hand = hand
+        self.cards = cards
         self.selected_cards = selected
         self.num_cards = num_cards
         self.can_pick_zero = can_pick_zero
 
     @classmethod
     def from_json(cls, json_object):
-        hand = [Card.from_json(card) for card in json_object.get("hand")]
+        cards = [Card.from_json(card) for card in json_object.get("hand")]
         selected_cards = [Card.from_json(card) for card in json_object.get("selected")]
         num_cards = json_object.get("max_cards")
         can_pick_zero = json_object.get("can_pick_zero")
-        return cls(hand, selected_cards, num_cards, can_pick_zero)
+        return cls(cards, selected_cards, num_cards, can_pick_zero)
 
 
 class GameOverScreen(Screen):

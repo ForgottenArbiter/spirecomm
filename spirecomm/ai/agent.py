@@ -35,8 +35,7 @@ class SimpleAgent:
             self.priorities = random.choice(list(PlayerClass))
 
     def handle_error(self, error):
-        self.errors += 1
-        return self.get_next_action_in_game(self.game, self.available_commands, from_error=True)
+        raise Exception(error)
 
     def get_next_action_in_game(self, game_state, available_commands, from_error=False):
         if not from_error:
@@ -193,7 +192,13 @@ class SimpleAgent:
             else:
                 available_cards = self.priorities.get_sorted_cards(self.game.screen.cards, reverse=True)
             num_cards = self.game.screen.num_cards
-            return GridSelectAction(available_cards[:num_cards])
+            return CardSelectAction(available_cards[:num_cards])
+        elif self.game.screen_type == ScreenType.HAND_SELECT:
+            if not self.game.choice_available:
+                return ProceedAction()
+            # Usually, we don't want to choose the whole hand for a hand select. 3 seems like a good compromise.
+            num_cards = min(self.game.screen.num_cards, 3)
+            return CardSelectAction(self.priorities.get_cards_for_action(self.game.current_action, self.game.screen.cards, num_cards))
         else:
             if "proceed" not in self.available_commands or random.random() < 0.8:
                 return ChooseAction(random.randrange(0, len(self.game.choice_list)))

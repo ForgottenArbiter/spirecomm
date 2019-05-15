@@ -1,3 +1,4 @@
+import math
 
 class Priority:
 
@@ -19,6 +20,24 @@ class Priority:
 
     MAP_NODE_PRIORITIES_3 = {'R': 1000, 'E': 1, '$': 100, '?': 100, 'M': 10, 'T': 0}
 
+    GOOD_CARD_ACTIONS = [
+        "PutOnDeckAction",
+        "ArmamentsAction",
+        "DualWieldAction",
+        "NightmareAction",
+        "RetainCardsAction",
+        "SetupAction"
+    ]
+
+    BAD_CARD_ACTIONS = [
+        "DiscardAction",
+        "ExhaustAction",
+        "PutOnBottomOfDeckAction",
+        "RecycleAction",
+        "ForethoughtAction",
+        "GamblingChipAction"
+    ]
+
     def __init__(self):
         self.CARD_PRIORITIES = {self.CARD_PRIORITY_LIST[i]: i for i in range(len(self.CARD_PRIORITY_LIST))}
         self.PLAY_PRIORITIES = {self.PLAY_PRIORITY_LIST[i]: i for i in range(len(self.PLAY_PRIORITY_LIST))}
@@ -31,25 +50,25 @@ class Priority:
         }
 
     def get_best_card(self, card_list):
-        return min(card_list, key=lambda x: self.CARD_PRIORITIES.get(x.card_id, 100000) - 0.5 * x.upgrades)
+        return min(card_list, key=lambda x: self.CARD_PRIORITIES.get(x.card_id, math.inf) - 0.5 * x.upgrades)
 
     def get_worst_card(self, card_list):
-        return max(card_list, key=lambda x: self.CARD_PRIORITIES.get(x.card_id, 100000) - 0.5 * x.upgrades)
+        return max(card_list, key=lambda x: self.CARD_PRIORITIES.get(x.card_id, math.inf) - 0.5 * x.upgrades)
 
     def get_sorted_cards(self, card_list, reverse=False):
-        return sorted(card_list, key=lambda x: self.CARD_PRIORITIES.get(x.card_id, 100000) - 0.5 * x.upgrades, reverse=reverse)
+        return sorted(card_list, key=lambda x: self.CARD_PRIORITIES.get(x.card_id, math.inf) - 0.5 * x.upgrades, reverse=reverse)
 
     def get_sorted_cards_to_play(self, card_list, reverse=False):
-        return sorted(card_list, key=lambda x: self.PLAY_PRIORITIES.get(x.card_id, 100000) - 0.5 * x.upgrades, reverse=reverse)
+        return sorted(card_list, key=lambda x: self.PLAY_PRIORITIES.get(x.card_id, math.inf) - 0.5 * x.upgrades, reverse=reverse)
 
     def get_best_card_to_play(self, card_list):
-        return min(card_list, key=lambda x: self.PLAY_PRIORITIES.get(x.card_id, 100000) - 0.5 * x.upgrades)
+        return min(card_list, key=lambda x: self.PLAY_PRIORITIES.get(x.card_id, math.inf) - 0.5 * x.upgrades)
 
     def get_worst_card_to_play(self, card_list):
-        return max(card_list, key=lambda x: self.PLAY_PRIORITIES.get(x.card_id, 100000) - 0.5 * x.upgrades)
+        return max(card_list, key=lambda x: self.PLAY_PRIORITIES.get(x.card_id, math.inf) - 0.5 * x.upgrades)
 
     def should_skip(self, card):
-        return self.CARD_PRIORITIES.get(card.card_id, 10000) > self.CARD_PRIORITIES.get("Skip", 100000)
+        return self.CARD_PRIORITIES.get(card.card_id, math.inf) > self.CARD_PRIORITIES.get("Skip")
 
     def needs_more_copies(self, card, num_copies):
         return self.MAX_COPIES.get(card.card_id, 0) > num_copies
@@ -62,6 +81,14 @@ class Priority:
 
     def is_card_defensive(self, card):
         return card.card_id in self.DEFENSIVE_CARDS
+
+    def get_cards_for_action(self, action, cards, max_cards):
+        if action in self.GOOD_CARD_ACTIONS:
+            sorted_cards = self.get_sorted_cards(cards, reverse=False)
+        else:
+            sorted_cards = self.get_sorted_cards(cards, reverse=True)
+        num_cards = min(max_cards, len(cards))
+        return sorted_cards[:num_cards]
 
 
 class SilentPriority(Priority):

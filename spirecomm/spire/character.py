@@ -32,6 +32,24 @@ class PlayerClass(Enum):
     DEFECT = 3
 
 
+class Orb:
+
+    def __init__(self, name, orb_id, evoke_amount, passive_amount):
+        self.name = name
+        self.orb_id = orb_id
+        self.evoke_amount = evoke_amount
+        self.passive_amount = passive_amount
+
+    @classmethod
+    def from_json(cls, json_object):
+        name = json_object.get("name")
+        orb_id = json_object.get("id")
+        evoke_amount = json_object.get("evoke_amount")
+        passive_amount = json_object.get("passive_amount")
+        orb = Orb(name, orb_id, evoke_amount, passive_amount)
+        return orb
+
+
 class Character:
 
     def __init__(self, max_hp, current_hp=None, block=0):
@@ -48,11 +66,13 @@ class Player(Character):
     def __init__(self, max_hp, current_hp=None, block=0, energy=0):
         super().__init__(max_hp, current_hp, block)
         self.energy = energy
+        self.orbs = []
 
     @classmethod
     def from_json(cls, json_object):
         player = cls(json_object["max_hp"], json_object["current_hp"], json_object["block"], json_object["energy"])
         player.powers = [Power.from_json(json_power) for json_power in json_object["powers"]]
+        player.orbs = [Orb.from_json(orb) for orb in json_object["orbs"]]
         return player
 
 
