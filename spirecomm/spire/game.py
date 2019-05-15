@@ -55,8 +55,16 @@ class Game:
         self.choice_list = []
         self.choice_available = False
 
+        # Available Commands
+
+        self.end_available = False
+        self.potion_available = False
+        self.play_available = False
+        self.proceed_available = False
+        self.cancel_available = False
+
     @classmethod
-    def from_json(cls, json_state):
+    def from_json(cls, json_state, available_commands):
         game = cls()
         game.current_action = json_state.get("current_action", None)
         game.current_hp = json_state.get("current_hp")
@@ -96,6 +104,15 @@ class Game:
             game.discard_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("discard_pile")]
             game.exhaust_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("exhaust_pile")]
             game.hand = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("hand")]
+
+        # Available Commands
+
+        game.end_available = "end" in available_commands
+        game.potion_available = "potion" in available_commands
+        game.play_available = "play" in available_commands
+        game.proceed_available = "proceed" in available_commands or "confirm" in available_commands
+        game.cancel_available = "cancel" in available_commands or "leave" in available_commands \
+                                or "return" in available_commands or "skip" in available_commands
 
         return game
 

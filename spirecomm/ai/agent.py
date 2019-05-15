@@ -13,7 +13,6 @@ class SimpleAgent:
 
     def __init__(self, chosen_class=PlayerClass.THE_SILENT):
         self.game = Game()
-        self.available_commands = []
         self.errors = 0
         self.choose_good_card = False
         self.skipped_cards = False
@@ -37,27 +36,22 @@ class SimpleAgent:
     def handle_error(self, error):
         raise Exception(error)
 
-    def get_next_action_in_game(self, game_state, available_commands, from_error=False):
-        if not from_error:
-            self.errors = 0
+    def get_next_action_in_game(self, game_state):
         self.game = game_state
-        self.available_commands = available_commands
-        if self.errors == 0:
-            pass
-            time.sleep(0.07)
+        time.sleep(0.07)
         if self.game.choice_available:
             return self.handle_screen()
-        if "proceed" in available_commands or "confirm" in available_commands:
+        if self.game.proceed_available:
             return ProceedAction()
-        if "play" in available_commands:
+        if self.game.play_available:
             if self.game.room_type == "MonsterRoomBoss" and len(self.game.get_real_potions()) > 0:
                 potion_action = self.use_next_potion()
                 if potion_action is not None:
                     return potion_action
             return self.get_play_card_action()
-        if "end" in available_commands:
+        if self.game.end_available:
             return EndTurnAction()
-        if "cancel" in available_commands or "leave" in available_commands or "return" in available_commands or "skip" in available_commands:
+        if self.game.cancel_available:
             return CancelAction()
 
     def get_next_action_out_of_game(self):
@@ -200,10 +194,7 @@ class SimpleAgent:
             num_cards = min(self.game.screen.num_cards, 3)
             return CardSelectAction(self.priorities.get_cards_for_action(self.game.current_action, self.game.screen.cards, num_cards))
         else:
-            if "proceed" not in self.available_commands or random.random() < 0.8:
-                return ChooseAction(random.randrange(0, len(self.game.choice_list)))
-            if "proceed" in self.available_commands or "confirm" in self.available_commands:
-                return ProceedAction()
+            return ProceedAction()
 
     def choose_rest_option(self):
         rest_options = self.game.screen.rest_options

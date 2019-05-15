@@ -59,7 +59,6 @@ class Coordinator:
         self.stop_after_run = False
         self.in_game = False
         self.last_game_state = None
-        self.last_available_commands = []
         self.last_error = None
 
     def signal_ready(self):
@@ -116,7 +115,7 @@ class Coordinator:
         """Register a function to be called when a message is received from Communication Mod
 
         :param new_callback: the function to call
-        :type new_callback: function(game_state: Game, available_commands: list) -> Action
+        :type new_callback: function(game_state: Game) -> Action
         :return: None
         """
         self.state_change_callback = new_callback
@@ -167,8 +166,7 @@ class Coordinator:
             if self.last_error is None:
                 self.in_game = communication_state.get("in_game")
                 if self.in_game:
-                    self.last_game_state = Game.from_json(communication_state.get("game_state"))
-                    self.last_available_commands = communication_state.get("available_commands")
+                    self.last_game_state = Game.from_json(communication_state.get("game_state"), communication_state.get("available_commands"))
             if perform_callbacks:
                 if self.last_error is not None:
                     self.action_queue.clear()
@@ -176,7 +174,7 @@ class Coordinator:
                     self.add_action_to_queue(new_action)
                 elif self.in_game:
                     if len(self.action_queue) == 0 and perform_callbacks:
-                        new_action = self.state_change_callback(self.last_game_state, self.last_available_commands)
+                        new_action = self.state_change_callback(self.last_game_state)
                         self.add_action_to_queue(new_action)
                 elif self.stop_after_run:
                     self.clear_actions()
