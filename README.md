@@ -17,3 +17,7 @@ The spirecomm package facilitates communicating with Slay the Spire through Comm
 ## Running the AI:
 
 To run a simple Slay the Spire AI, configure Communication Mod to run main.py
+
+## Installing spirecomm:
+
+Run `python setup.py install` from the distribution root directory
