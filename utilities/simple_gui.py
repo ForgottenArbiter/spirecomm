@@ -40,7 +40,7 @@ class Base(BoxLayout):
         Window.bind(on_key_up=self.key_callback)
 
     def do_communication(self, dt):
-        message = self.coordinator.take_raw_message()
+        message = self.coordinator.get_next_raw_message()
         if message is not None:
             self.input_text.text = message
         self.coordinator.execute_next_action_if_ready()
@@ -75,3 +75,7 @@ def launch_gui():
     communication_coordinator = coord.Coordinator()
     communication_coordinator.signal_ready()
     CommunicationApp(communication_coordinator).run()
+
+
+if __name__ == "__main__":
+    launch_gui()
