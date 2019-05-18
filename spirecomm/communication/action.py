@@ -251,15 +251,16 @@ class CardSelectAction(Action):
 
     def execute(self, coordinator):
         screen_type = coordinator.last_game_state.screen_type
+        screen = coordinator.last_game_state.screen
         if screen_type not in [ScreenType.HAND_SELECT, ScreenType.GRID]:
             raise Exception("CardSelectAction is only available on a Hand Select or Grid Select Screen.")
-        num_selected_cards = len(coordinator.last_game_state.screen.selected_cards)
-        num_remaining_cards = coordinator.last_game_state.screen.num_cards - num_selected_cards
-        available_cards = coordinator.last_game_state.screen.cards
-        if screen_type == ScreenType.HAND_SELECT and len(self.cards) > num_remaining_cards:
-            raise Exception("Too many cards selected for CardSelectAction (provided {}, max {})".format(len(self.cards), num_remaining_cards))
-        elif screen_type == ScreenType.GRID and len(self.cards) != num_remaining_cards:
+        num_selected_cards = len(screen.selected_cards)
+        num_remaining_cards = screen.num_cards - num_selected_cards
+        available_cards = screen.cards
+        if screen_type == ScreenType.GRID and not screen.any_number and len(self.cards) != num_remaining_cards:
             raise Exception("Wrong number of cards selected for CardSelectAction (provided {}, need {})".format(len(self.cards), num_remaining_cards))
+        elif len(self.cards) > num_remaining_cards:
+            raise Exception("Too many cards selected for CardSelectAction (provided {}, max {})".format(len(self.cards), num_remaining_cards))
         chosen_indices = []
         for card in self.cards:
             if card not in available_cards:
