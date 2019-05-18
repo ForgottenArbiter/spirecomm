@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name='spirecomm',
-    version='0.4.1',
+    version='0.5.0',
     packages=['spirecomm', 'spirecomm.ai', 'spirecomm.spire', 'spirecomm.communication'],
     url='https://github.com/ForgottenArbiter/spirecomm',
     license='MIT License',
