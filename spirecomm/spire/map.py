@@ -33,7 +33,6 @@ class Map:
             return self.nodes[y][x]
         else:
             return None
-            #raise Exception("missing {},{} in {}".format(x, y, str(self.nodes)))
 
     @classmethod
     def from_json(cls, node_list):
