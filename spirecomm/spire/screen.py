@@ -276,7 +276,7 @@ class GridSelectScreen(Screen):
         self.any_number = any_number
         self.confirm_up = confirm_up
         self.for_upgrade = for_upgrade
-        self.for_tranform = for_transform
+        self.for_transform = for_transform
         self.for_purge = for_purge
 
     @classmethod
@@ -287,7 +287,7 @@ class GridSelectScreen(Screen):
         any_number = json_object.get("any_number", False)
         confirm_up = json_object.get("confirm_up")
         for_upgrade = json_object.get("for_upgrade")
-        for_transform = json_object.get("for_tranform")
+        for_transform = json_object.get("for_transform")
         for_purge = json_object.get("for_purge")
         return cls(cards, selected_cards, num_cards, any_number, confirm_up, for_upgrade, for_transform, for_purge)
 
