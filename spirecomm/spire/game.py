@@ -44,6 +44,7 @@ class Game:
         self.discard_pile = []
         self.exhaust_pile = []
         self.hand = []
+        self.limbo = []
 
         # Current Screen
 
@@ -105,6 +106,7 @@ class Game:
             game.discard_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("discard_pile")]
             game.exhaust_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("exhaust_pile")]
             game.hand = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("hand")]
+            game.limbo = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("limbo", [])]
 
         # Available Commands
 
