@@ -1,5 +1,9 @@
 ## Changelog ##
 
+#### Development ####
+* Added card_in_play, turn, and cards_discarded_this_turn from the Communication Mod combat state
+* Added monster move history from the Communication Mod combat state
+
 #### v0.6.0 ####
 * Fixed "for_transform" field in card select screens
 * Added act boss information from Communication Mod 0.6.0

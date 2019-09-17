@@ -45,6 +45,9 @@ class Game:
         self.exhaust_pile = []
         self.hand = []
         self.limbo = []
+        self.card_in_play = None
+        self.turn = 0
+        self.cards_discarded_this_turn = 0
 
         # Current Screen
 
@@ -107,6 +110,11 @@ class Game:
             game.exhaust_pile = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("exhaust_pile")]
             game.hand = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("hand")]
             game.limbo = [spirecomm.spire.card.Card.from_json(json_card) for json_card in combat_state.get("limbo", [])]
+            game.card_in_play = combat_state.get("card_in_play", None)
+            if game.card_in_play is not None:
+                game.card_in_play = spirecomm.spire.card.Card.from_json(game.card_in_play)
+            game.turn = combat_state.get("turn", 0)
+            game.cards_discarded_this_turn = combat_state.get("cards_discarded_this_turn", 0)
 
         # Available Commands
 

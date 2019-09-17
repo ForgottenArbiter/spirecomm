@@ -78,7 +78,7 @@ class Player(Character):
 
 class Monster(Character):
 
-    def __init__(self, name, monster_id, max_hp, current_hp, block, intent, half_dead, is_gone, move_id=-1, move_base_damage=0, move_adjusted_damage=0, move_hits=0):
+    def __init__(self, name, monster_id, max_hp, current_hp, block, intent, half_dead, is_gone, move_id=-1, last_move_id=None, second_last_move_id=None, move_base_damage=0, move_adjusted_damage=0, move_hits=0):
         super().__init__(max_hp, current_hp, block)
         self.name = name
         self.monster_id = monster_id
@@ -86,6 +86,8 @@ class Monster(Character):
         self.half_dead = half_dead
         self.is_gone = is_gone
         self.move_id = move_id
+        self.last_move_id = last_move_id
+        self.second_last_move_id = second_last_move_id
         self.move_base_damage = move_base_damage
         self.move_adjusted_damage = move_adjusted_damage
         self.move_hits = move_hits
@@ -102,10 +104,12 @@ class Monster(Character):
         half_dead = json_object["half_dead"]
         is_gone = json_object["is_gone"]
         move_id = json_object.get("move_id", -1)
+        last_move_id = json_object.get("last_move_id", None)
+        second_last_move_id = json_object.get("second_last_move_id", None)
         move_base_damage = json_object.get("move_base_damage", 0)
         move_adjusted_damage = json_object.get("move_adjusted_damage", 0)
         move_hits = json_object.get("move_hits", 0)
-        monster = cls(name, monster_id, max_hp, current_hp, block, intent, half_dead, is_gone, move_id, move_base_damage, move_adjusted_damage, move_hits)
+        monster = cls(name, monster_id, max_hp, current_hp, block, intent, half_dead, is_gone, move_id, last_move_id, second_last_move_id, move_base_damage, move_adjusted_damage, move_hits)
         monster.powers = [Power.from_json(json_power) for json_power in json_object["powers"]]
         return monster
 
